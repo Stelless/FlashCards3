@@ -8,6 +8,7 @@
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
 #include "Card.h"
+#include "Random.h"
 
 using namespace std;
 namespace pt = boost::property_tree; // Short alias for this namespace
@@ -49,18 +50,20 @@ void loadDeck(std::string deck_file_name, Deck& deck) {
 // Purpose: Print Menu Options to Screen
 void printOptionMenu() {
    cout << "\nHello! Please select an option:" << endl;
-   cout << "N:      Start Flash Card Excersizes" << endl;
-   cout << "X:      Make Hold Deck the Current Play Deck" << endl;
-   cout << "S:      Save in Hold Deck" << endl;
-   cout << "L:      Look up Card by ID in master" << endl;
    cout << "C:      Print All Flash Cards in Current Deck" << endl;
+   cout << "D:      Draw Random Card from Current Deck" << endl;
    cout << "F:      Load Different Flash Card Deck " << endl;
-   cout << "T:      Toggle Question/Answer first " << endl;
-   cout << "H:      Program Help (TBI)" << endl;
-   cout << "R:      Reset Play Deck to Master" << endl;
+   cout << "H:      Program Help" << endl;
+   cout << "L:      Look up Card by ID in master" << endl;
+   cout << "N:      Start/Continue Flash Card Excersizes" << endl;
    cout << "Q:      Exit the Program" << endl;
+   cout << "R:      Reset Play Deck to Master" << endl;
+   cout << "S:      Save in Hold Deck" << endl;
+   cout << "T:      Toggle Question/Answer first " << endl;
+   cout << "X:      Make Hold Deck the Current Play Deck" << endl;
    return;
 }
+
 
 // Purpose: Displays the contents of card.
 void displayCard(CardPtr& current_card, AnswerMode _answer_mode)
@@ -77,6 +80,9 @@ void displayCard(CardPtr& current_card, AnswerMode _answer_mode)
       static_cast<void>(_getch()); // may prduce a warning, should be okay :D
       current_card->printQuestion();
    }
+
+   cout << endl;
+   printOptionMenu();
 }
 
 // Purpose: Remove top card from play_deck and point to the next card in the serieas
@@ -91,6 +97,40 @@ bool drawNextCard(Deck& play_deck, CardPtr& current_card) {
       success = true;
    }
    return success;
+}
+
+bool drawRandomCard(Deck& play_deck, CardPtr& current_card) {
+   bool success{ false };
+   if (play_deck.empty()) {
+      cout << "Play deck is empty" << endl;
+   }
+   else {
+      auto& rand = Random::getInstance();
+
+      int iterator_move_distance = rand.draw(static_cast<int>(play_deck.size()-1));// determine the proper range [0,size], [0, size -1]?
+
+      auto rand_it = play_deck.begin();
+      std::advance(rand_it, iterator_move_distance);
+      current_card = rand_it->second;
+      
+      play_deck.erase(rand_it);
+      success = true;
+   }
+   return success;
+}
+void lookUpCardByKey(Deck& master_deck, CardPtr& current_card, AnswerMode answer_mode)
+{
+   cout << "Enter the key (ex: AAA.001) [type carefully] of the card you would like to search for: ";
+   string response{};
+   getline(cin, response);
+   auto find_iter = master_deck.find(response);
+   if (find_iter == master_deck.end()) {
+      cout << "Could not find card" << endl;
+   }
+   else {
+      current_card = find_iter->second;
+      displayCard(current_card, answer_mode);
+   }
 }
 
 // Purpose: Main
@@ -115,6 +155,35 @@ int main()
       cmd = std::toupper(cmd);
       cout << "CMD: " << cmd << endl;
       switch (cmd) {
+      case 'D':
+      {
+         if (drawRandomCard(play_deck, current_card)) {
+            displayCard(current_card, answer_mode);
+         }
+      }
+         break;
+      case 'F':
+      {
+         // switch master decks
+         cout << "Enter the deck file name you would like to load.... ";
+         string response{};
+         getline(cin, response);
+         if (response == "default") {
+            cout << "Loading default deck." << endl;
+            master_deck.clear();
+            loadDeck(default_file_name, master_deck);
+
+         }
+         else {
+            cout << "Loading " << response << " deck." << endl;
+            master_deck.clear();
+            loadDeck(response, master_deck);
+         }
+         play_deck = master_deck; // Make sure the play deck is assigned ot the new master deck
+         current_card = play_deck.begin()->second; // point at the correct card (first card of the paly deck)
+         cout << "Deck loaded" << endl;
+      }
+      break;
       case 'R':
       {
          play_deck = master_deck;
@@ -128,38 +197,30 @@ int main()
       }
       break;
       case 'L':
-      {
-         cout << "Enter the key (ex: AAA.001) [type carefully] of the card you would like to search for: ";
-         string response{};
-         getline(cin, response);
-         auto find_iter = master_deck.find(response);
-         if (find_iter == master_deck.end()) {
-            cout << "Could not find card" << endl;
-         }
-         else {
-            current_card = find_iter->second;
-            displayCard(current_card, answer_mode);
-         }
-      }
-      break;
+         lookUpCardByKey(master_deck, current_card, answer_mode);
+         break;
       case 'S':
          if (current_card != nullptr) {
             hold_deck.insert({ current_card->id, current_card });
             cout << "Card: " << current_card->id << " has been added to the hold deck. Hold Deck size: " << hold_deck.size() << endl;
+            cout << "Please enter another command: " << endl;
          }
          else {
             cout << "No current card selected." << endl;
+            cout << "Please enter another command: " << endl;
          }
          break;
       case 'X':
+         system("CLS");
          if (!hold_deck.empty()) {
             play_deck = std::move(hold_deck);
             hold_deck.clear();
-            cout << "Hold Deck is now empty the Play Deck has: " << play_deck.size();
+            cout << "Hold Deck is now empty the Play Deck has: " << play_deck.size() << endl;
          }
          else {
             cout << "Hold Deck empty" << endl;
          }
+         printOptionMenu();
          break;
       case 'N':
          //Advance to next card and print current card

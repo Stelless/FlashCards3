@@ -1,0 +1,48 @@
+{
+  "cards": [
+    {
+      "id": "BBB.001",
+      "question": [
+        "What is a virtual function?"
+      ],
+      "answer": [
+        "This is a member function in the base class",
+        "that you can redefine in a derived class."
+      ]
+    },
+
+    {
+      "id": "BBB.002",
+      "question": [
+        "What is an inline function?"
+      ],
+      "answer": [
+        "The compiler places a copy of the code of that function at each point where the function",
+        "is called at compile time."
+      ]
+    },
+
+    {
+      "id": "BBB.003",
+      "question": [
+        "What is Abstraction?"
+      ],
+      "answer": [
+        "This is the process of "
+      ]
+    },
+
+    {
+      "id": "BBB.004",
+      "question": [
+        "What is the 'this' pointer",
+        "in C++?"
+      ],
+      "answer": [
+        "The member functions of every object have a pointer named 'this'', which",
+        "points to the object itself. The value of 'this' is set to the address",
+        "of the object for which it is called. It can be used to access the data in the object it points to."
+      ]
+    }
+  ]
+}
